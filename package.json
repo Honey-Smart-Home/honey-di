@@ -1,5 +1,5 @@
 {
-  "name": "@honey/di",
+  "name": "@honey-sm/di",
   "version": "0.0.1-SNAPSHOT",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
