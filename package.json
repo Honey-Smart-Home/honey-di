@@ -1,0 +1,31 @@
+{
+  "name": "@honey/di",
+  "version": "0.0.1-SNAPSHOT",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "typings": "./lib/index.d.ts",
+  "author": "Drischdaan",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Honey-Smart-Home/honey-di"
+  },
+  "bugs": {
+    "url": "https://github.com/Honey-Smart-Home/honey-di/issues"
+  },
+  "homepage": "https://github.com/Honey-Smart-Home/honey-di#readme",
+  "files": [
+    "lib"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "release": "yarn build && yarn publish"
+  },
+  "devDependencies": {
+    "@types/node": "^14.14.9",
+    "typescript": "^4.1.2"
+  },
+  "dependencies": {
+    "reflect-metadata": "^0.1.13"
+  }
+}
