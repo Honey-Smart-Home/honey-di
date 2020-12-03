@@ -6,6 +6,7 @@
   "typings": "./lib/index.d.ts",
   "author": "Drischdaan",
   "license": "MIT",
+  "private": false,
   "repository": {
     "type": "git",
     "url": "https://github.com/Honey-Smart-Home/honey-di"
