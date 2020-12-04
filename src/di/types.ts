@@ -1,3 +1,2 @@
-export type Constructor<T> = Function & { prototype: T };
-export interface IConstructor<T> { new(...args: any[]): T; }
-export type FactoryFunction<T> = () => T;
+export type Class<T> = Function & { prototype: T };
+export interface IConcreteConstructor<T> { new(...args: any[]): T; }

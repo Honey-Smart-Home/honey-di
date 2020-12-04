@@ -1,102 +1,100 @@
-import { Constructor, FactoryFunction, IConstructor } from "./types";
-import { FactoryRegistration, InstanceRegistration, SingletonRegistration, TransientRegistration, SingletonFactoryRegistration } from "./registrations";
-import { IRegistration } from "./interfaces";
-import { ITypedRegistration } from "../di/interfaces";
+import { Scope } from "./scope.enum";
+import { Class, IConcreteConstructor } from "./types";
+
+export class Bind<T> {
+
+    private _class: IConcreteConstructor<T> | undefined;
+    private _scope: Scope;
+    private _instance: T | undefined;
+
+    constructor(private _token: string, private _callback: Function, providerClass?: Class<T>) {
+        this._scope = Scope.TRANSIENT;
+        if(providerClass !== undefined)
+            this._class = providerClass as unknown as IConcreteConstructor<T>;
+    }
+
+    public to<E>(provider: IConcreteConstructor<E>): Bind<T> {
+        if(provider === undefined)
+            throw new Error(`Invalid provider given!`);
+        this._class = provider as unknown as IConcreteConstructor<T>;
+        this._callback(this._token, this);
+        return this;
+    }
+
+    public toSelf(): Bind<T> {
+        if(this._class === undefined)
+            throw new Error(`Invalid provider given!`);
+        this._callback(this._token, this);
+        return this;
+    }
+
+    public scope(scope: Scope): Bind<T> {
+        if(scope === undefined)
+            throw new Error(`Invalid scope given!`);
+        this._scope = scope;
+        this._callback(this._token, this);
+        return this;
+    }
+
+    public resolve(argumentBuilder: (type: IConcreteConstructor<T>) => any[]): T | undefined {
+        if(this._class === undefined)
+            throw new Error(`Invalid class given! '${this._token} has no class provider!`);
+
+        if(this._scope === Scope.SINGLETON) {
+            if(this._instance === undefined) {
+                const args: any[] = argumentBuilder(this._class);
+                this._instance = new this._class(...args);
+            }
+            return this._instance;
+        } else if(this._scope === Scope.TRANSIENT) {
+            const args: any[] = argumentBuilder(this._class);
+            return new this._class(...args);
+        }
+        return undefined;
+    }
+
+}
+
 
 export class Container {
 
-    private _parameterTypes: Map<Function, any[]> = new Map<Function, any[]>();
-    private _providers: Map<Function, IRegistration> = new Map<Function, IRegistration>();
 
-    public registerTransient<T>(self: IConstructor<T>): void;
-    public registerTransient<From, To extends From>(when: Constructor<From>, then: IConstructor<To>): void;
-    public registerTransient<From, To extends From>(when: Constructor<From> | IConstructor<From>, then?: IConstructor<To>): void {
-        if (when == undefined) {
-            throw new Error(`Cannot register null or undefined as transient. Did you intend to call unregister?`);
-        }
-        if (then == undefined) {
-            then = when as IConstructor<To>;
-        }
+    private _registry: Map<string, Bind<any>>;
 
-        this.register(when, then, new TransientRegistration<To>(then));
+    constructor() {
+        this._registry = new Map<string, Bind<any>>();
     }
 
-    public registerSingleton<T>(self: IConstructor<T>): void;
-    public registerSingleton<From, To extends From>(when: Constructor<From>, then: IConstructor<To>): void;
-    public registerSingleton<From, To extends From>(when: Constructor<From> | IConstructor<From>, then?: IConstructor<To>): void {
-        if (when == undefined) {
-            throw new Error(`Cannot register null or undefined as singleton. Did you intend to call unregister?`);
-        }
-        if (then == undefined) {
-            then = when as IConstructor<To>;
-        }
-
-        this.register(when, then, new SingletonRegistration<To>(then));
+    public register<T>(token: string | symbol | Class<T>): Bind<T> {
+        if(token === undefined)
+            throw new Error(`Invalid symbol given!`);
+        console.log(`Register: ${this.makeToken<T>(token)}`);
+        return new Bind<T>(this.makeToken<T>(token), (_token: string, _bind: Bind<T>) => this._registry.set(_token, _bind), (typeof(token) === 'function' ? token : undefined));
     }
 
-    public registerInstance<T>(when: Constructor<T>, then: T): void {
-        if (then == undefined) {
-            throw new Error(`Cannot register null or undefined as instance. Did you intend to call unregister?`);
-        }
-        if (typeof(then) !== typeof(when.prototype)) {
-            throw new Error(`You need to register an instance with the same type as the prototype of the source.`);
-        }
-
-        this._providers.set(when, new InstanceRegistration<T>(then));
+    public resolve<T>(token: string | symbol | Class<T>): T {
+        const generatedToken: string = this.makeToken<T>(token);
+        const bind: Bind<T> | undefined = this._registry.get(generatedToken);
+        if(bind === undefined)
+            throw new Error(`There is no provider definition for '${generatedToken}'`);
+        const provider: T | undefined = bind.resolve((type) => this.resolveArguments(type));
+        if(provider === undefined)
+            throw new Error(`Unable to resolve '${generatedToken}'!`);
+        return provider;
     }
 
-    public registerFactory<T>(when: Constructor<T>, then: FactoryFunction<T>) {
-        if (then == undefined) {
-            throw new Error(`Cannot register null or undefined as factory. Did you intend to call unregister?`);
-        }
-
-        this._providers.set(when, new FactoryRegistration<T>(then));
+    public merge(copy: Container): Container {
+        let container: Container = new Container();
+        const registry = new Map<string, Bind<any>>(this._registry);
+        copy.getRegistry().forEach((value: Bind<any>, key: string) => {
+            registry.set(key, value);
+        });
+        container['_registry'] = registry;
+        return container;
     }
 
-    public registerSingletonFactory<T>(when: Constructor<T>, then: FactoryFunction<T>) {
-        if (then == undefined) {
-            throw new Error(`Cannot register null or undefined as singleton factory. Did you intend to call unregister?`);
-        }
-
-        this._providers.set(when, new SingletonFactoryRegistration<T>(then));
-    }
-
-    public unregister<T>(type: Constructor<T>): void {
-        if (type == undefined) {
-            throw new Error(`Cannot unregister null or undefined type`);
-        }
-
-        const registration = this._providers.get(type);
-        if (registration == undefined) {
-            return;
-        }
-
-        this._providers.delete(type);
-    }
-
-    public resolve<T>(type: Constructor<T>): T {
-        if (type == undefined) {
-            throw new Error(`Cannot resolve null or undefined type`);
-        }
-
-        const registration = this._providers.get(type) as ITypedRegistration<T>;
-        if (registration == undefined) {
-            throw new Error(`No registration found for type '${type.name}'`);
-        }
-
-        return registration.resolve((toResolve) => this.createArgs(toResolve));
-    }
-
-    private register<From, To extends From>(when: Constructor<From>, then: IConstructor<To>, registration: IRegistration): void {
-        if(!Reflect.hasMetadata("DI:SupportsInjection", then.prototype))
-            throw new Error(`${then.name} does not support injection! Forgot to add '@Injectable()' to the class ?`);
-        const paramTypes: any[] = Reflect.getMetadata("design:paramtypes", then);
-        this._parameterTypes.set(then, paramTypes);
-        this._providers.set(when, registration);
-    }
-
-    private createArgs<T>(type: IConstructor<T>): any[] {
-        const paramTypes = this._parameterTypes.get(type);
+    private resolveArguments<T>(type: IConcreteConstructor<T>): any[] {
+        const paramTypes: any[] = Reflect.getMetadata("design:paramtypes", type);
         if (paramTypes == undefined) {
             return [];
         }
@@ -106,5 +104,23 @@ export class Container {
         });
         return paramTypes.map((x) => this.resolve(x));
     }
+
+    private makeToken<T>(token: string | symbol | Class<T>): string {
+        let registerToken: string;
+        if(typeof(token) === 'string')
+            registerToken = token;
+        else if(typeof(token) === 'symbol') {
+            if(token.description === undefined)
+                throw new Error('Invalid symbol provided!');
+            registerToken = token.description;
+        } else
+            registerToken = token.name;
+        return registerToken;
+    }
+
+
+    // Getters & Setters
+
+    public getRegistry(): Map<string, Bind<any>> { return new Map(this._registry); }
 
 }
