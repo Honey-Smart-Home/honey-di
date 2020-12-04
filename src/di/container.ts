@@ -68,8 +68,19 @@ export class Container {
     public register<T>(token: string | symbol | Class<T>): Bind<T> {
         if(token === undefined)
             throw new Error(`Invalid symbol given!`);
-        console.log(`Register: ${this.makeToken<T>(token)}`);
-        return new Bind<T>(this.makeToken<T>(token), (_token: string, _bind: Bind<T>) => this._registry.set(_token, _bind), (typeof(token) === 'function' ? token : undefined));
+        const generatedToken: string = this.makeToken<T>(token);
+        if(this._registry.get(generatedToken) !== undefined)
+            throw new Error(`'${generatedToken}' is already registered!`);
+        return new Bind<T>(generatedToken, (_token: string, _bind: Bind<T>) => this._registry.set(_token, _bind), (typeof(token) === 'function' ? token : undefined));
+    }
+
+    public unregister<T>(token: string | symbol | Class<T>): void {
+        if(token === undefined)
+            throw new Error(`Invalid symbol given!`);
+        const generatedToken: string = this.makeToken<T>(token);
+        if(this._registry.get(generatedToken) === undefined)
+            throw new Error(`'${generatedToken}' is already registered!`);
+        this._registry.delete(generatedToken);
     }
 
     public resolve<T>(token: string | symbol | Class<T>): T {
