@@ -1,3 +1,3 @@
-# @honey-sm/di 💉
+# @honey-sh/di 💉
 
 Dependency injection utility
