@@ -1,5 +1,3 @@
-import 'reflect-metadata';
-
 export function Injectable() {
     return function<T extends { new(...args: any[]): {} }>(constructor: T) {
         Reflect.defineMetadata("DI:SupportsInjection", true, constructor.prototype);
