@@ -13,7 +13,7 @@ export class Bind<T> {
             this._class = providerClass as unknown as IConcreteConstructor<T>;
     }
 
-    public to<E>(provider: IConcreteConstructor<E>): Bind<T> {
+    public to<E extends T>(provider: IConcreteConstructor<E>): Bind<T> {
         if(provider === undefined)
             throw new Error(`Invalid provider given!`);
         this._class = provider as unknown as IConcreteConstructor<T>;
@@ -32,6 +32,18 @@ export class Bind<T> {
         if(scope === undefined)
             throw new Error(`Invalid scope given!`);
         this._scope = scope;
+        this._callback(this._token, this);
+        return this;
+    }
+
+    public asSingleton(): Bind<T> {
+        this._scope = Scope.SINGLETON;
+        this._callback(this._token, this);
+        return this;
+    }
+
+    public asTransient(): Bind<T> {
+        this._scope = Scope.TRANSIENT;
         this._callback(this._token, this);
         return this;
     }
