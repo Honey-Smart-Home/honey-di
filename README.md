@@ -11,7 +11,7 @@ Inversion of control system
 Example code:
 
 ```ts
-import { Container, Scope } from '@honey-sh/di';
+import { Container } from '@honey-sh/di';
 
 
 // Dummy classes / interfaces
@@ -19,7 +19,7 @@ import { Container, Scope } from '@honey-sh/di';
 interface ILogger {
     log(msg: string): void;
 }
-class ConsoleLogger {
+class ConsoleLogger implements ILogger {
     public log(msg: string) {
         console.log(`[Logger]: ${msg}`) ;
     }
