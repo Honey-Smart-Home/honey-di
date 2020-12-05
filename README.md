@@ -53,7 +53,7 @@ const container: Container = new Container();
 
 container.register<ILogger>(Symbol.for('ILogger')).to<ConsoleLogger>(ConsoleLogger); // Interface registration
 container.register<Car>(Car).to<MercedesCar>(MercedesCar); // Abstract class registration
-container.register<MathUtils>(MathUtils).toSelf().scope(Scope.SINGLETON); // Self registration && Singleton registration
+container.register<MathUtils>(MathUtils).toSelf().asSingleton(); // Self registration && Singleton registration (Default is transient)
 
 function testResolving() {
     const logger: ILogger = container.resolve<ILogger>(Symbol.for('ILogger')); // Resolving interfaces
@@ -70,7 +70,7 @@ testResolving();
 
 // Lets see what happens when we reregister MathUtils as a transient
 container.unregister<MathUtils>(MathUtils);
-container.register<MathUtils>(MathUtils).toSelf().scope(Scope.TRANSIENT); // Self registration && Singleton registration
+container.register<MathUtils>(MathUtils).toSelf().asTransient(); // Self registration && Singleton registration (Default is transient)
 
 testResolving();
 ```
