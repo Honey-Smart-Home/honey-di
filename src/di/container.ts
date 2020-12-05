@@ -91,7 +91,7 @@ export class Container {
             throw new Error(`Invalid symbol given!`);
         const generatedToken: string = this.makeToken<T>(token);
         if(this._registry.get(generatedToken) === undefined)
-            throw new Error(`'${generatedToken}' is already registered!`);
+            throw new Error(`'${generatedToken}' is already unregistered!`);
         this._registry.delete(generatedToken);
     }
 
